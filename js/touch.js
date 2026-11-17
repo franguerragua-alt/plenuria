@@ -41,7 +41,7 @@ P.Touch = {
     this.resize();
   },
   resize() {
-    if (!this.cv) return; const W = window.innerWidth, H = window.innerHeight; this.dpr = Math.min(3, window.devicePixelRatio || 1);
+    if (!this.cv) return; const { w: W, h: H } = P.viewSize(); this.dpr = Math.min(3, window.devicePixelRatio || 1);
     this.cv.width = Math.round(W * this.dpr); this.cv.height = Math.round(H * this.dpr); this.cv.style.width = W + 'px'; this.cv.style.height = H + 'px';
     const si = this.safe(), u = Math.min(W, H), m = Math.max(14, u * 0.045), r = Math.max(24, Math.min(46, u * 0.085)), xr = W - si.r - m, yb = H - si.b - m, cx = xr - r * 2.5, cy = yb - r * 2.4, pw = r * 1.9, ph = r * 0.85, py = cy - r * 2.95;
     const pos = { A: [cx, cy + r * 1.3], B: [cx + r * 1.3, cy], X: [cx - r * 1.3, cy], Y: [cx, cy - r * 1.3], L: [xr - pw * 2.5 - 12, py], R: [xr - pw * 1.5 - 6, py], S: [xr - pw * 0.5, py], P: [W / 2, si.t + m + r * 0.5], F: [xr - r * 0.5, si.t + m + r * 0.5] };

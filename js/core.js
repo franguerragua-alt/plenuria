@@ -215,12 +215,21 @@ P.drawToasts = function (c) {
 };
 
 P.resize = function () {
-  if (P.settings.scale) { const sc = P.settings.scale; P.scale = sc; P.canvas.width = P.W * sc; P.canvas.height = P.H * sc; P.canvas.style.width = P.canvas.style.height = ''; return; }
-  // automático: ocupa toda la ventana o pantalla (móvil, tableta, escritorio) manteniendo la proporción y los píxeles nítidos
-  const fit = Math.min(window.innerWidth / P.W, window.innerHeight / P.H), dpr = Math.min(3, window.devicePixelRatio || 1);
+  if (P.settings.scale) { const v0 = P.viewSize(); P._vw = v0.w; P._vh = v0.h; const sc = P.settings.scale; P.scale = sc; P.canvas.width = P.W * sc; P.canvas.height = P.H * sc; P.canvas.style.width = P.canvas.style.height = ''; return; }
+  // automático: ocupa toda la ventana o pantalla (móvil, tableta, escritorio) manteniendo la proporción y los píxeles nítidos.
+  // Se mide el área visible real (en iPhone y Android las medidas tardan en actualizarse al girar o al pasar a pantalla completa)
+  // y se descuentan los márgenes seguros (muesca, barra de inicio).
+  const v = P.viewSize(), si = P.safeInsets(); P._vw = v.w; P._vh = v.h;
+  const fit = Math.max(0.25, Math.min((v.w - si.l - si.r) / P.W, (v.h - si.t - si.b) / P.H)), dpr = Math.min(3, window.devicePixelRatio || 1);
   const sc = Math.max(1, Math.min(8, Math.ceil(fit * dpr - 0.01)));
   P.scale = sc; P.canvas.width = P.W * sc; P.canvas.height = P.H * sc;
   P.canvas.style.width = Math.floor(P.W * fit) + 'px'; P.canvas.style.height = Math.floor(P.H * fit) + 'px';
+  if (P.Touch && P.Touch.on) P.Touch.resize();
+};
+P.viewSize = function () { const vv = window.visualViewport; return { w: Math.round(vv && vv.width ? vv.width : window.innerWidth), h: Math.round(vv && vv.height ? vv.height : window.innerHeight) }; };
+P.safeInsets = function () {
+  let d = P._safeProbe; if (!d) { d = P._safeProbe = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(d); }
+  const cs = getComputedStyle(d); return { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
 };
 
 P.init = function () {
@@ -233,6 +242,12 @@ P.init = function () {
   P.loadSettings();
   P.resize();
   window.addEventListener('resize', P.resize);
+  // en móviles el tamaño cambia al girar, al ocultar barras o al entrar en pantalla completa: se vuelve a medir varias veces
+  const again = () => [60, 250, 600, 1200].forEach(t => setTimeout(P.resize, t));
+  window.addEventListener('orientationchange', again); window.addEventListener('pageshow', again);
+  document.addEventListener('fullscreenchange', again); document.addEventListener('webkitfullscreenchange', again);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', P.resize);
+  setInterval(() => { const v = P.viewSize(); if (v.w !== P._vw || v.h !== P._vh) P.resize(); }, 500);
   P.Font.build();
   P.Gfx.build();
   P.State.init();
