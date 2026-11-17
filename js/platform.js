@@ -5,6 +5,45 @@ P.PLATFORM = window.Capacitor ? 'android' : /Electron/i.test(navigator.userAgent
 // app web instalable: funciona sin conexión una vez abierta (solo en la versión publicada en https)
 if (P.PLATFORM === 'web' && 'serviceWorker' in navigator && location.protocol === 'https:') window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
 
+// Pantalla completa. Android (navegador), iPad, escritorio y la app de Windows usan la API del navegador.
+// En iPhone, Safari no la permite: el modo pantalla completa es la app instalada desde «Añadir a pantalla de inicio»
+// (se abre sin barras de Safari) u «Ocultar barra de herramientas». Se muestra una guía paso a paso.
+P.FullScreen = {
+  isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+  installed() { return navigator.standalone === true || !!(window.matchMedia && (matchMedia('(display-mode: fullscreen)').matches || matchMedia('(display-mode: standalone)').matches)); },
+  on() { return !!(document.fullscreenElement || document.webkitFullscreenElement); },
+  active() { return this.on() || this.installed() || P.PLATFORM === 'android'; },
+  can() { const el = document.documentElement; return !!(el.requestFullscreen || el.webkitRequestFullscreen) && !!(document.fullscreenEnabled || document.webkitFullscreenEnabled); },
+  toggle() {
+    if (P.PLATFORM === 'android') return; // el APK ya va siempre a pantalla completa
+    const d = document, el = d.documentElement;
+    if (this.on()) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    if (this.can()) {
+      try { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); if (p && p.then) p.then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => { }); }, () => this.guide()); }
+      catch (e) { this.guide(); }
+      return;
+    }
+    this.guide();
+  },
+  guide() {
+    if (document.getElementById('fsguide')) return;
+    const box = document.createElement('div'); box.id = 'fsguide';
+    box.style.cssText = 'position:fixed;inset:0;z-index:30;background:rgba(3,4,10,0.94);color:#e8f4ff;font:15px/1.45 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:16px;touch-action:auto';
+    const ios = this.isIOS;
+    box.innerHTML = '<div style="max-width:560px;background:#0b1424;border:2px solid #5ee8ff;border-radius:12px;padding:18px 20px;max-height:100%;overflow:auto">' +
+      '<div style="font-weight:800;font-size:18px;color:#5ee8ff;margin-bottom:8px">Pantalla completa' + (ios ? ' en iPhone' : '') + '</div>' +
+      (ios ? '<p style="margin:6px 0"><b style="color:#ffd166">Recomendado: instalar PLENURIA.</b> Se abre siempre a pantalla completa, sin barras de Safari, y funciona sin conexión.</p>' +
+        '<ol style="margin:6px 0 10px 20px;padding:0"><li>Pulsa el botón <b>Compartir</b> de Safari (el cuadrado con la flecha <b>⬆︎</b>).</li><li>Elige <b>«Añadir a pantalla de inicio»</b> y pulsa <b>Añadir</b>.</li><li>Abre PLENURIA desde el <b>icono nuevo</b>. Tu partida de Safari no pasa sola: usa Opciones → Exportar/Importar partidas.</li></ol>' +
+        '<p style="margin:6px 0"><b style="color:#ffd166">Sin instalar:</b> pulsa <b>«aA»</b> (o el icono de la página) en la barra de Safari y elige <b>«Ocultar barra de herramientas»</b>.</p>'
+        : '<p style="margin:6px 0">Este navegador no deja activar la pantalla completa desde la página. Instala el juego desde el menú del navegador (<b>«Instalar app»</b> o <b>«Añadir a pantalla de inicio»</b>) y ábrelo desde su icono.</p>') +
+      '<div style="text-align:center;margin-top:12px"><button id="fsok" style="font:700 16px system-ui,sans-serif;background:#5ee8ff;color:#05060c;border:0;border-radius:8px;padding:10px 28px">Entendido</button></div></div>';
+    document.body.appendChild(box);
+    const close = e => { e.preventDefault(); e.stopPropagation(); box.remove(); };
+    box.querySelector('#fsok').addEventListener('click', close); box.querySelector('#fsok').addEventListener('touchend', close);
+    for (const ev of ['touchstart', 'touchmove', 'touchend']) box.addEventListener(ev, e => e.stopPropagation(), { passive: true });
+  }
+};
+
 P.SavePort = {
   dump() { const data = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('plenuria_')) data[k] = localStorage.getItem(k); } return { game: 'PLENURIA', v: 1, at: new Date().toISOString(), data }; },
   copy(txt) { try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(txt).then(() => true, () => false); } catch (e) { } return Promise.resolve(false); },
@@ -43,7 +82,7 @@ P.SavePort = {
 (function () {
   const items0 = P.OptionsUI.prototype.items;
   P.OptionsUI.prototype.items = function () {
-    return items0.call(this).concat([
+    return items0.call(this).concat(P.PLATFORM === 'android' ? [] : [{ l: 'Pantalla completa', v: P.FullScreen.on() || P.FullScreen.installed() ? 'Sí' : 'No', act: () => P.FullScreen.toggle() }], [
       { l: 'Exportar partidas (copia de seguridad)', v: '▶', act: () => P.SavePort.exportSaves() },
       { l: 'Importar partidas desde archivo', v: '▶', act: () => P.SavePort.importFile() },
       { l: 'Importar partidas pegando el texto', v: '▶', act: () => P.SavePort.importPaste() }

@@ -13,7 +13,8 @@ P.Touch = {
     { id: 'L', acts: ['defend'], label: 'DEFENSA', col: '#b48cff', pill: true },
     { id: 'R', acts: ['swap'], label: 'ARMA', col: '#a8b4cc', pill: true },
     { id: 'S', acts: ['super'], label: 'SÚPER', col: '#ff8a3a', pill: true },
-    { id: 'P', acts: ['pause'], label: 'II', col: '#c8d4e8', small: true }
+    { id: 'P', acts: ['pause'], label: 'II', col: '#c8d4e8', small: true },
+    { id: 'F', acts: [], label: '', col: '#5ee8ff', small: true, inMenu: true, fs: true } // pantalla completa (en iPhone abre la guía)
   ],
   init() {
     const opt = { passive: false };
@@ -42,12 +43,17 @@ P.Touch = {
   resize() {
     if (!this.cv) return; const W = window.innerWidth, H = window.innerHeight; this.dpr = Math.min(3, window.devicePixelRatio || 1);
     this.cv.width = Math.round(W * this.dpr); this.cv.height = Math.round(H * this.dpr); this.cv.style.width = W + 'px'; this.cv.style.height = H + 'px';
-    const u = Math.min(W, H), m = Math.max(14, u * 0.045), r = Math.max(24, Math.min(46, u * 0.085)), cx = W - m - r * 2.5, cy = H - m - r * 2.4, pw = r * 1.9, ph = r * 0.85, py = cy - r * 2.95;
-    const pos = { A: [cx, cy + r * 1.3], B: [cx + r * 1.3, cy], X: [cx - r * 1.3, cy], Y: [cx, cy - r * 1.3], L: [W - m - pw * 2.5 - 12, py], R: [W - m - pw * 1.5 - 6, py], S: [W - m - pw * 0.5, py], P: [W / 2, m + r * 0.5] };
-    this.L = { W, H, m, r, pw, ph, pos, stick: { x: m + r * 2.1, y: H - m - r * 2.1, R: r * 1.7 } };
+    const si = this.safe(), u = Math.min(W, H), m = Math.max(14, u * 0.045), r = Math.max(24, Math.min(46, u * 0.085)), xr = W - si.r - m, yb = H - si.b - m, cx = xr - r * 2.5, cy = yb - r * 2.4, pw = r * 1.9, ph = r * 0.85, py = cy - r * 2.95;
+    const pos = { A: [cx, cy + r * 1.3], B: [cx + r * 1.3, cy], X: [cx - r * 1.3, cy], Y: [cx, cy - r * 1.3], L: [xr - pw * 2.5 - 12, py], R: [xr - pw * 1.5 - 6, py], S: [xr - pw * 0.5, py], P: [W / 2, si.t + m + r * 0.5], F: [xr - r * 0.5, si.t + m + r * 0.5] };
+    this.L = { W, H, m, r, pw, ph, pos, stick: { x: si.l + m + r * 2.1, y: yb - r * 2.1, R: r * 1.7 } };
+  },
+  // márgenes seguros (muesca y barra de inicio del iPhone)
+  safe() {
+    let d = this._probe; if (!d) { d = this._probe = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(d); }
+    const cs = getComputedStyle(d); return { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
   },
   menuMode() { const s = P.scene; return P.ui.length > 0 || !s || s instanceof P.TitleScene || (P.IntroScene && s instanceof P.IntroScene) || (P.EndingScene && s instanceof P.EndingScene); },
-  visible(b) { return this.menuMode() ? !!b.inMenu : true; },
+  visible(b) { if (b.fs) return !!P.FullScreen && !P.FullScreen.active(); return this.menuMode() ? !!b.inMenu : true; },
   hit(x, y) {
     const L = this.L; if (!L) return null;
     for (const b of this.BTN) {
@@ -65,6 +71,7 @@ P.Touch = {
   },
   release(id) {
     this.held[id] = Math.max(0, (this.held[id] || 0) - 1); if (this.held[id]) return;
+    if (id === 'F') { P.FullScreen.toggle(); return; } // al soltar el dedo: el navegador solo permite pantalla completa en ese momento
     for (const a of this.BTN.find(q => q.id === id).acts) this.state[a] = false;
   },
   setDirs(l, r, u, d) { this.state.left = l; this.state.right = r; this.state.up = u; this.state.down = d; if (l) this.latch.left = true; if (r) this.latch.right = true; if (u) this.latch.up = true; if (d) this.latch.down = true; },
@@ -130,6 +137,7 @@ P.Touch = {
       else c.arc(x, y, b.small ? L.r * 0.5 : L.r, 0, 7);
       c.fill(); c.stroke();
       c.globalAlpha = on ? 1 : 0.85; c.fillStyle = on ? '#05060c' : '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      if (b.fs) { const k = L.r * 0.22, q = L.r * 0.11; c.strokeStyle = on ? '#05060c' : '#ffffff'; c.lineWidth = 2; c.beginPath(); for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { c.moveTo(x + sx * k, y + sy * (k - q)); c.lineTo(x + sx * k, y + sy * k); c.lineTo(x + sx * (k - q), y + sy * k); } c.stroke(); continue; }
       if (b.pill || b.small) { c.font = '700 ' + Math.round(L.r * (b.small ? 0.42 : 0.36)) + 'px system-ui, sans-serif'; c.fillText(label, x, y + 1); }
       else { c.font = '800 ' + Math.round(L.r * 0.62) + 'px system-ui, sans-serif'; c.fillText(b.id, x, y - L.r * 0.16); c.font = '700 ' + Math.round(L.r * 0.27) + 'px system-ui, sans-serif'; c.fillStyle = on ? '#05060c' : b.col; c.fillText(label, x, y + L.r * 0.45); }
     }
