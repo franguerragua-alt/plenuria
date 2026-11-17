@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05060c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PLENURIA">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>PLENURIA — The Solar Reclamation</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060c;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+  #touchui{position:fixed;inset:0;pointer-events:none;z-index:5}
+  #rotate{display:none;position:fixed;inset:0;z-index:20;background:#05060c;color:#7fe0ff;font:600 18px system-ui,sans-serif;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+  #rotate b{font-size:46px;color:#ffd166}
+  @media (orientation: portrait){ body.touch #rotate{display:flex} }
+  body{display:flex;align-items:center;justify-content:center}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+  #boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#7fe0ff;font:14px monospace;letter-spacing:2px}
+</style>
+</head>
+<body>
+<div id="boot">PLENURIA · generando sistema solar…</div>
+<canvas id="screen" width="480" height="270"></canvas>
+<div id="rotate"><b>⟳</b>Gira el teléfono para jugar<br><small style="color:#8a98b8;font-weight:400">PLENURIA se juega en horizontal</small></div>
+<script src="js/core.js"></script>
+<script src="js/font.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/space_art.js"></script>
+<script src="js/sprites_chars.js"></script>
+<script src="js/villains.js"></script>
+<script src="js/sprites_world.js"></script>
+<script src="js/clouds.js"></script>
+<script src="js/sprites_bosses.js"></script>
+<script src="js/khazir_art.js"></script>
+<script src="js/nivorah_art.js"></script>
+<script src="js/thalassyr_art.js"></script>
+<script src="js/suits.js"></script>
+<script src="js/umbrelia_art.js"></script>
+<script src="js/mykoris_art.js"></script>
+<script src="js/xertha_art.js"></script>
+<script src="js/ignaria_art.js"></script>
+<script src="js/aerthyon_art.js"></script>
+<script src="js/aerthyon_bg.js"></script>
+<script src="js/dyson_art.js"></script>
+<script src="js/data.js"></script>
+<script src="js/levels_verzara.js"></script>
+<script src="js/levels_khazir.js"></script>
+<script src="js/levels_nivorah.js"></script>
+<script src="js/levels_thalassyr.js"></script>
+<script src="js/levels_umbrelia.js"></script>
+<script src="js/levels_mykoris.js"></script>
+<script src="js/levels_xertha.js"></script>
+<script src="js/levels_ignaria.js"></script>
+<script src="js/levels_aerthyon.js"></script>
+<script src="js/levels_dyson.js"></script>
+<script src="js/state.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/boss_krazthor.js"></script>
+<script src="js/boss_zarmakh.js"></script>
+<script src="js/boss_glorvax.js"></script>
+<script src="js/boss_thalzor.js"></script>
+<script src="js/boss_arachnara.js"></script>
+<script src="js/boss_mykaron.js"></script>
+<script src="js/boss_zyrkalia.js"></script>
+<script src="js/boss_magnarok.js"></script>
+<script src="js/boss_azhyrion.js"></script>
+<script src="js/boss_nemesis.js"></script>
+<script src="js/boss_thersek.js"></script>
+<script src="js/boss_gerselle.js"></script>
+<script src="js/boss_merek.js"></script>
+<script src="js/companions.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/difficulty.js"></script>
+<script src="js/touch.js"></script>
+<script src="js/platform.js"></script>
+<script src="js/scene_level.js"></script>
+<script src="js/scene_overworld.js"></script>
+<script src="js/scene_ship.js"></script>
+<script src="js/ship_render.js"></script>
+<script src="js/ship_travel.js"></script>
+<script src="js/ship_gallery.js"></script>
+<script src="js/khazir_data.js"></script>
+<script src="js/nivorah_data.js"></script>
+<script src="js/creatures_alien.js"></script>
+<script src="js/visual_fx.js"></script>
+<script src="js/shaders.js"></script>
+<script src="js/anim_fx.js"></script>
+<script src="js/architecture.js"></script>
+<script src="js/thalassyr_data.js"></script>
+<script src="js/umbrelia_data.js"></script>
+<script src="js/mykoris_data.js"></script>
+<script src="js/xertha_data.js"></script>
+<script src="js/ignaria_data.js"></script>
+<script src="js/ignaria_bg.js"></script>
+<script src="js/aerthyon_data.js"></script>
+<script src="js/dyson_data.js"></script>
+<script src="js/galactic_battle.js"></script>
+<script src="js/dyson_area2.js"></script>
+<script src="js/dyson_area3.js"></script>
+<script src="js/dyson_throne.js"></script>
+<script src="js/ending.js"></script>
+<script src="js/bg_layers.js"></script>
+<script src="js/ow_details.js"></script>
+<script src="js/scene_title.js"></script>
+<script>window.addEventListener('load',()=>{P.init();document.getElementById('boot').remove();});</script>
+</body>
+</html>
